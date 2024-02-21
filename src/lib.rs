@@ -1,6 +1,5 @@
 use tracing::dispatcher;
 
-#[repr(C)]
 pub struct SharedLogger {
     dispatch: tracing::Dispatch,
     #[cfg(feature = "log")]
@@ -15,8 +14,7 @@ pub fn build_shared_logger() -> SharedLogger {
     }
 }
 
-#[no_mangle]
-pub extern "Rust" fn setup_shared_logger(logger: SharedLogger) {
+pub fn setup_shared_logger(logger: SharedLogger) {
     dispatcher::set_global_default(logger.dispatch).unwrap();
     #[cfg(feature = "log")]
     log::set_logger(logger.logger).unwrap();
