@@ -3,6 +3,12 @@ name = "tracing-shared"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["JakkuSakura <qjk2001@gmail.com>"]
+license = "MIT/Apache-2.0"
+description = "Derive traits for GlueSQL"
+repository = "https://github.com/JakkuSakura/tracing-shared-rs"
+
+
 [dependencies]
 tracing = { version = "0.1", features = [] }
 log = { version = "0.4", optional = true }
