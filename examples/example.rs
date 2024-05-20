@@ -5,13 +5,10 @@ fn main() {
     let dylib = build_dylib();
 
     // set tracing logger
-    tracing::subscriber::set_global_default(
-        tracing_subscriber::FmtSubscriber::builder()
-            .without_time()
-            .finish(),
-    )
-    .unwrap();
-
+    tracing_subscriber::FmtSubscriber::builder()
+        .without_time()
+        .init();
+    // tracing::level_filters::STATIC_MAX_LEVEL
     // set log logger
     #[cfg(feature = "log")]
     simple_logger::SimpleLogger::new()
