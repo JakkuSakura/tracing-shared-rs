@@ -1,4 +1,5 @@
 use std::{io::Write, path::PathBuf};
+use tracing_shared::SharedLogger;
 
 fn main() {
     // build example-lib
@@ -8,17 +9,11 @@ fn main() {
     tracing_subscriber::FmtSubscriber::builder()
         .without_time()
         .init();
-    // tracing::level_filters::STATIC_MAX_LEVEL
-    // set log logger
-    #[cfg(feature = "log")]
-    simple_logger::SimpleLogger::new()
-        .without_timestamps()
-        .init()
-        .unwrap();
 
     // log in the normal program
     println!("program println!");
     tracing::info!("program tracing::info!");
+    // log was supported in tracing_subscriber
     #[cfg(feature = "log")]
     log::info!("program log::info!");
 
@@ -28,9 +23,12 @@ fn main() {
 
 fn run_dylib(dylib: PathBuf) {
     let dylib = unsafe { libloading::Library::new(dylib) }.expect("error loading dylib");
-    let run: fn(tracing_shared::SharedLogger) = unsafe { *dylib.get(b"run").unwrap() };
-
-    run(tracing_shared::build_shared_logger());
+    let setup_logger: extern "C" fn(&SharedLogger) =
+        unsafe { *dylib.get(b"setup_shared_logger_ref").unwrap() };
+    let run: fn() = unsafe { *dylib.get(b"run").unwrap() };
+    let logger = SharedLogger::new();
+    setup_logger(&logger);
+    run()
 }
 
 fn build_dylib() -> PathBuf {
