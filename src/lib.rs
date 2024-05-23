@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 use crate::helper::FakeSubscriber;
+#[cfg(feature = "tokio")]
 pub use crate::tokio::TokioEnterGuard;
 use std::fmt::{Debug, Formatter};
 use tracing::subscriber::{set_global_default, NoSubscriber};
