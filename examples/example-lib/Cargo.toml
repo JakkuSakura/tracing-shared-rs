@@ -11,8 +11,9 @@ crate-type = ["dylib"]
 tracing-shared = { path = "../.." }
 tracing = "0.1"
 log = { version = "0.4", optional = true }
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["full"], optional = true }
 
 [features]
-default = ["log"]
+default = ["log", "tokio"]
 log = ["dep:log", "tracing-shared/log"]
+tokio = ["dep:tokio", "tracing-shared/tokio"]

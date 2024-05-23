@@ -1,4 +1,4 @@
-use example_lib::exports::{FnRun, FnSetupLogger};
+use example_lib::exports::{FnRun, FnSetupLogger, FnSetupTokio};
 use std::time::Duration;
 use std::{io::Write, path::PathBuf};
 use tracing_shared::SharedLogger;
@@ -24,27 +24,33 @@ fn main() {
         .build()
         .unwrap()
         .block_on(async {
+            let logger = SharedLogger::new();
             // log in the rust dylib
-            run_dylib();
+            run_dylib(&logger);
             // log in the cdylib, see `example-lib/src/lib.rs`
-            run_cdylib(cdylib);
+            run_cdylib(cdylib, &logger);
             // wait for spawned tasks to finish
             tokio::time::sleep(Duration::from_secs(1)).await
         })
 }
 
-fn run_dylib() {
-    let logger = SharedLogger::new();
+fn run_dylib(logger: &SharedLogger) {
     example_lib::setup_shared_logger_ref(&logger);
+    let _guard = example_lib::setup_shared_tokio_ref(&logger);
     example_lib::run("dylib");
+    println!("drop guard");
+    drop(_guard)
 }
-fn run_cdylib(dylib: PathBuf) {
+fn run_cdylib(dylib: PathBuf, logger: &SharedLogger) {
     let dylib = unsafe { libloading::Library::new(dylib) }.expect("error loading dylib");
     let setup_logger: FnSetupLogger = unsafe { *dylib.get(b"setup_shared_logger_ref").unwrap() };
-    let run: FnRun = unsafe { *dylib.get(b"run").unwrap() };
-    let logger = SharedLogger::new();
     setup_logger(&logger);
-    run("cdylib")
+    let setup_tokio: FnSetupTokio = unsafe { *dylib.get(b"setup_shared_tokio_ref").unwrap() };
+    let _guard = setup_tokio(&logger);
+    let run: FnRun = unsafe { *dylib.get(b"run").unwrap() };
+    run("cdylib");
+    println!("drop guard");
+    drop(_guard)
 }
 fn build_dylib() -> PathBuf {
     print!("building `example-lib`...");

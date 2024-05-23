@@ -2,6 +2,7 @@
 ///
 /// or linked as a dylib. it will be linked automatically on startup
 pub use tracing_shared::setup_shared_logger_ref;
+pub use tracing_shared::setup_shared_tokio_ref;
 
 #[no_mangle]
 pub fn run(src: &str) {
@@ -14,13 +15,16 @@ pub fn run(src: &str) {
     tracing::info!("{} tracing::info!", src);
     #[cfg(feature = "log")]
     log::info!("{} log::info!", src);
-    // unfortunately, tokio doesn't work
-    // let src = src.to_string();
-    // tokio::task::spawn(async move { println!("{} println! from tokio task", src) });
+    #[cfg(feature = "tokio")]
+    let src = src.to_string();
+    #[cfg(feature = "tokio")]
+    tokio::task::spawn(async move { println!("{} println! from tokio task", src) });
 }
 
 pub mod exports {
-    use tracing_shared::SharedLogger;
+    use tracing_shared::{SharedLogger, TokioEnterGuard};
     pub type FnSetupLogger = fn(&SharedLogger);
+    #[cfg(feature = "tokio")]
+    pub type FnSetupTokio = fn(&SharedLogger) -> Option<TokioEnterGuard>;
     pub type FnRun = fn(&str);
 }
