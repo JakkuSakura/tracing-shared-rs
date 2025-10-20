@@ -1,23 +1,17 @@
 #![doc = include_str!("../README.md")]
 
 use crate::helper::FakeSubscriber;
-#[cfg(feature = "tokio")]
-pub use crate::tokio::TokioEnterGuard;
 use std::fmt::{Debug, Formatter};
 use tracing::subscriber::{set_global_default, NoSubscriber};
 
 mod helper;
-#[cfg(feature = "tokio")]
-mod tokio;
 fn get_data() -> u64 {
     set_global_default::<NoSubscriber> as *const () as u64
 }
 pub const FEATURE_LOG: u16 = (cfg!(feature = "log") as u16) << 0;
-pub const FEATURE_TOKIO: u16 = (cfg!(feature = "tokio") as u16) << 1;
 fn get_features() -> u16 {
     let mut feature = 0;
     feature |= FEATURE_LOG;
-    feature |= FEATURE_TOKIO;
     feature
 }
 fn check_features(features: u16) {
@@ -27,14 +21,6 @@ fn check_features(features: u16) {
             "`feature = log` mismatch: executable = {}, dylib = {}",
             log_enabled != 0,
             FEATURE_LOG != 0
-        );
-    }
-    let tokio_enabled = features & (1 << 1);
-    if tokio_enabled ^ FEATURE_TOKIO != 0 {
-        panic!(
-            "`feature = tokio` mismatch: executable = {}, dylib = {}",
-            tokio_enabled != 0,
-            FEATURE_TOKIO != 0
         );
     }
 }
@@ -49,8 +35,6 @@ pub struct SharedLogger {
     logger: &'static dyn log::Log,
     #[cfg(feature = "log")]
     level: log::LevelFilter,
-    #[cfg(feature = "tokio")]
-    handle: Option<::tokio::runtime::Handle>,
 }
 impl Debug for SharedLogger {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -77,8 +61,6 @@ impl SharedLogger {
             logger: log::logger(),
             #[cfg(feature = "log")]
             level: log::max_level(),
-            #[cfg(feature = "tokio")]
-            handle: ::tokio::runtime::Handle::try_current().ok(),
         }
     }
     #[inline(never)]
@@ -100,16 +82,6 @@ impl SharedLogger {
             // it fails for dylib, but it's not necessary to setup for tracing
             let _ = log::set_logger(self.logger);
             log::set_max_level(self.level);
-        }
-    }
-
-    /// the tokio function is unstable
-    /// may be removed soon for sake of another crate
-    #[cfg(feature = "tokio")]
-    pub fn install_tokio(&self) -> Option<TokioEnterGuard> {
-        match &self.handle {
-            Some(handle) => Some(TokioEnterGuard::new(handle.enter())),
-            None => None,
         }
     }
 }
@@ -137,11 +109,4 @@ pub fn setup_shared_logger(logger: SharedLogger) {
 #[inline(never)]
 pub fn setup_shared_logger_ref(logger: &SharedLogger) {
     logger.install()
-}
-
-#[cfg(feature = "tokio")]
-#[no_mangle]
-#[inline(never)]
-pub fn setup_shared_tokio_ref(logger: &SharedLogger) -> Option<TokioEnterGuard> {
-    logger.install_tokio()
 }

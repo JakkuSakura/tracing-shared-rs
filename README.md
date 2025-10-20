@@ -38,3 +38,22 @@ fn main() {
     example_lib::run("dylib");
 }
 ```
+
+### Exported entry points
+
+When you expose functions from your shared library so the host binary can `dlsym`/`GetProcAddress` them, add `#[no_mangle]` to keep the symbol names predictable.
+
+```rust
+#[no_mangle]
+pub fn run(src: &str) {
+    println!(
+        "{} feature = log is enabled: {}",
+        src,
+        cfg!(feature = "log")
+    );
+    println!("{} println!", src);
+    tracing::info!("{} tracing::info!", src);
+    #[cfg(feature = "log")]
+    log::info!("{} log::info!", src);
+}
+```

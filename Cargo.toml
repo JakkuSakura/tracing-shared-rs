@@ -1,6 +1,6 @@
 [package]
 name = "tracing-shared"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
 
 authors = ["JakkuSakura <qjk2001@gmail.com>"]
@@ -12,12 +12,10 @@ repository = "https://github.com/JakkuSakura/tracing-shared-rs"
 [dependencies]
 tracing = { version = "0.1", features = [] }
 log = { version = "0.4", optional = true }
-tokio = { version = "1", features = ["full"], optional = true }
 
 [features]
 default = ["log"]
 log = ["dep:log"]
-tokio = ["dep:tokio"]
 
 [dev-dependencies]
 libloading = "0.8"
